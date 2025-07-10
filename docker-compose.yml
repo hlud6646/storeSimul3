@@ -1,0 +1,53 @@
+services:
+
+  # Not that this is how to run a database in production, but it's a very clean setup for 
+  # small experiments.
+  database:
+    image: "postgres:14.18-bookworm"
+    restart: always
+    shm_size: 128mb
+    environment:
+      POSTGRES_DB: storedb
+      POSTGRES_USER: postgres
+      # TODO: Use secrets
+      POSTGRES_PASSWORD: bigsecret
+    ports:
+      - "5432:5432"
+    # This will cause the intialisation scripts in the database/postgres-init directory to be run 
+    # when the container is created.
+    volumes:
+      - ./database/postgres-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d storedb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Not part of the final product, but a good health check during development.
+  server: 
+    build:
+      context: ./hello-world-server
+      dockerfile: Dockerfile
+    depends_on:
+      database:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    # environment:
+    restart: always
+
+  products:
+    build:
+      context: ./products
+      dockerfile: Dockerfile
+    depends_on: 
+      database:
+        condition: service_healthy
+    environment: 
+      JDBC_URL: jdbc:postgresql://database:5432/storedb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: bigsecret
+    restart: always
+    
+    
+
