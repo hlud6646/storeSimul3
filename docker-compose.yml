@@ -1,3 +1,6 @@
+# TODO: Limit resources
+# TODO: Use secrets
+
 services:
 
   # Not that this is how to run a database in production, but it's a very clean setup for 
@@ -9,7 +12,6 @@ services:
     environment:
       POSTGRES_DB: storedb
       POSTGRES_USER: postgres
-      # TODO: Use secrets
       POSTGRES_PASSWORD: bigsecret
     ports:
       - "5432:5432"
@@ -36,6 +38,7 @@ services:
     # environment:
     restart: always
 
+  # Scala project that adds products
   products:
     build:
       context: ./products
@@ -48,6 +51,54 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: bigsecret
     restart: always
-    
-    
+
+  # suppliers:
+  #   build:
+  #     context: ./suppliers
+  #     dockerfile: Dockerfile
+  #   depends_on:
+  #     database:
+  #       condition: service_healthy
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: bigsecret
+  #     POSTGRES_HOST: database
+  #     POSTGRES_PORT: 5432
+  #     POSTGRES_DB: storedb
+  #   restart: always
+
+
+  # Elixir program that creates orders
+  orders: 
+    build:
+      context: ./orders
+      dockerfile: Dockerfile
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: bigsecret
+      POSTGRES_HOST: database
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: storedb
+    restart: always
+
+
+  # Python program that creates customers
+  customers:
+    build:
+      context: ./customers
+      dockerfile: Dockerfile
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: bigsecret
+      POSTGRES_HOST: database
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: storedb
+    restart: always
+
 
