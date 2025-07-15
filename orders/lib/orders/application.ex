@@ -8,10 +8,11 @@ defmodule Orders.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      # Starts a worker by calling: Orders.Worker.start_link(arg)
-      # {Orders.Worker, arg}
       Orders.Repo,
-      Orders.NewOrder
+      # These two processes are useful for development.
+      # {Orders.Heartbeat, []},
+      # {Orders.DatabaseMonitor, []},
+      {Orders.NewOrder, []}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

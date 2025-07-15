@@ -21,6 +21,9 @@ defmodule Orders.NewOrder do
 
   @impl true
   def init(_) do
+    create_order()
+    create_order()
+    create_order()
     schedule_new_order()
     {:ok, nil}
   end
@@ -38,7 +41,6 @@ defmodule Orders.NewOrder do
   end
 
   defp schedule_new_order do
-    # Delay is between 300 and 360 seconds
     delay = :rand.uniform(60000) + 300000
     Process.send_after(self(), :create_order, delay)
   end

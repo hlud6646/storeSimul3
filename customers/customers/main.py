@@ -1,3 +1,4 @@
+import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from faker import Faker
@@ -6,6 +7,10 @@ from time import sleep
 from random import randint
 import os
 from models import Customer
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 pg_host     = os.environ.get("POSTGRES_HOST")
 pg_database = os.environ.get("POSTGRES_DB")
@@ -25,5 +30,5 @@ while True:
                             primary_address=faker.address())
         session.add(customer)
         session.commit()
-        print(f'New customer: {customer} written to database.')
+        logger.info(f'New customer: {customer} written to database.')
     sleep(randint(300, 360))

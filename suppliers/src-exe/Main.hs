@@ -18,6 +18,7 @@ import Faker.PhoneNumber qualified as FPhone
 import GHC.Generics (Generic)
 import System.Environment (getEnv)
 import System.Random (randomRIO)
+import System.IO (hFlush, stdout)
 
 main :: IO ()
 main = do
@@ -25,13 +26,13 @@ main = do
   conn <- connectPostgreSQL connectionUrl
   hasSuppliers <- suppliersTableIsEmpty conn
   unless hasSuppliers $
-    replicateM_ 10 (writeRandonNewSupplier conn)
+    replicateM_ 10 (logSupplier <$> writeRandomNewSupplier conn)
   loop conn
 
 loop :: Connection -> IO ()
 loop conn =
   do
-    supplierID <- writeRandonNewSupplier conn
+    supplierID <- writeRandomNewSupplier conn
     logSupplier supplierID
     sleep
     loop conn
@@ -147,8 +148,8 @@ writeSupplierProducts conn supplierID productIds = do
     generateRandomPrice = randomRIO (100, 1000000)
 
 -- Create a random new supplier, and assign it some products.
-writeRandonNewSupplier :: Connection -> IO Int
-writeRandonNewSupplier conn =
+writeRandomNewSupplier :: Connection -> IO Int
+writeRandomNewSupplier conn =
   do
     supplierID <- writeNewSupplier conn
     productIds <- readRandomProducts conn
@@ -159,3 +160,4 @@ writeRandonNewSupplier conn =
 logSupplier :: Int -> IO ()
 logSupplier supplier = do
   putStrLn $ "New supplier with id" <> (show supplier)
+  hFlush stdout
