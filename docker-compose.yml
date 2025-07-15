@@ -136,4 +136,31 @@ services:
         /app/start_with_logging.sh
       "
 
+  # Python FastAPI service that provides a read-only dashboard API
+  dashboard-api:
+    build:
+      context: ./dashboard-api
+      dockerfile: Dockerfile
+    depends_on:
+      database:
+        condition: service_healthy
+      products:
+        condition: service_healthy
+      suppliers:
+        condition: service_healthy
+      customers:
+        condition: service_healthy
+      orders:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: bigsecret
+      POSTGRES_HOST: database
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: storedb
+      PORT: 8005
+    ports:
+      - "8005:8005"
+    restart: always
+
 
