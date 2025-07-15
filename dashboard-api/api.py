@@ -5,6 +5,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import psycopg2
 import os
+from datetime import datetime
+import pytz
 
 app = FastAPI()
 
@@ -47,7 +49,15 @@ def read_recent_orders():
     orders = cur.fetchall()
     cur.close()
     conn.close()
-    return [{ "id": o[0], "customer": o[1], "date": o[2].strftime('%Y-%m-%d'), "address": o[3] } for o in orders]
+    
+    sydney_tz = pytz.timezone('Australia/Sydney')
+    
+    return [{ 
+        "id": o[0], 
+        "customer": o[1], 
+        "date": o[2].astimezone(sydney_tz).strftime('%Y-%m-%d %H:%M:%S %Z'), 
+        "address": o[3] 
+    } for o in orders]
 
 @app.get("/top_products")
 def read_top_products():
@@ -79,7 +89,15 @@ def read_new_customers():
     customers = cur.fetchall()
     cur.close()
     conn.close()
-    return [{ "id": c[0], "name": c[1], "email": c[2], "joined": c[3].strftime('%Y-%m-%d') } for c in customers]
+    
+    sydney_tz = pytz.timezone('Australia/Sydney')
+    
+    return [{ 
+        "id": c[0], 
+        "name": c[1], 
+        "email": c[2], 
+        "joined": c[3].astimezone(sydney_tz).strftime('%Y-%m-%d %H:%M:%S %Z') 
+    } for c in customers]
 
 
 @app.get("/orders_over_time")
@@ -89,7 +107,7 @@ def read_orders_over_time():
     cur.execute("""
         SELECT * FROM (
             SELECT
-                to_timestamp(floor((extract(epoch from created) / 1200)) * 1200) AT TIME ZONE 'UTC' as time_window,
+                to_timestamp(floor((extract(epoch from created) / 1200)) * 1200) as time_window,
                 COUNT(id) as order_count
             FROM
                 purchase_order
@@ -105,7 +123,14 @@ def read_orders_over_time():
     orders_data = cur.fetchall()
     cur.close()
     conn.close()
-    return [{ "date": row[0].strftime('%Y-%m-%d %H:%M:%S'), "orders": row[1] } for row in orders_data]
+    
+    # Convert UTC timestamps to Sydney timezone
+    sydney_tz = pytz.timezone('Australia/Sydney')
+    
+    return [{ 
+        "date": row[0].replace(tzinfo=pytz.UTC).astimezone(sydney_tz).strftime('%Y-%m-%d %H:%M:%S %Z'), 
+        "orders": row[1] 
+    } for row in orders_data]
 
 
 
