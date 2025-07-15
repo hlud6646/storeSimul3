@@ -225,6 +225,10 @@ def read_products_by_department():
     conn.close()
     return [{ "department": row[0], "count": row[1] } for row in data]
 
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8005)))
