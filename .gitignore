@@ -5,3 +5,4 @@ customers/customers/__pycache__
 customers/uv.lock
 customers/pyproject.toml
 suppliers/dist-newstyle/cache
+suppliers/dist-newstyle

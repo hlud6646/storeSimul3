@@ -1,10 +1,5 @@
 # Fake Store
 
-**Given the scope and intention of this project, would SQLite not be a more
-appropriate solution? I mean, we're not persisting the database, or using
-anything that's particular to postgres. We *are* installing on an container
-though, which is both weird and hard to do with a full database service...**
-
 This is a pretty kooky project and exists entirely for learning.
 It is essesntially a simulation of a shop, with a database recording
 customers, product inventory, orders etc. 
@@ -14,15 +9,6 @@ knowledge, but it has branched out into:
 - App frameworks in Java, Python etc.
 - Database toolkits in the same;
 - Containerisation.
-
-Each part of the store is managed in a different language, but confronts similar tasks.
-These are 
-- IO;
-- Database connectivity;
-- Logging;
-- Statistics;
-- Data-faking.
-
 
 ## Components
 These are the components of the simulation that are currently running.
