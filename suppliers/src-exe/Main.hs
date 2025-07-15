@@ -6,7 +6,7 @@
 module Main where
 
 import Control.Concurrent (threadDelay)
-import Control.Monad (void)
+import Control.Monad (replicateM_, unless, void)
 import Data.ByteString (ByteString)
 import Data.ByteString.Char8 (pack)
 import Data.Text (Text)
@@ -23,14 +23,15 @@ main :: IO ()
 main = do
   connectionUrl <- getConnectionString
   conn <- connectPostgreSQL connectionUrl
+  hasSuppliers <- suppliersTableIsEmpty conn
+  unless hasSuppliers $
+    replicateM_ 10 (writeRandonNewSupplier conn)
   loop conn
 
 loop :: Connection -> IO ()
 loop conn =
   do
-    supplierID <- writeNewSupplier conn
-    productIds <- readRandomProducts conn
-    writeSupplierProducts conn supplierID productIds
+    supplierID <- writeRandonNewSupplier conn
     logSupplier supplierID
     sleep
     loop conn
@@ -101,6 +102,15 @@ getConnectionString = do
         ++ "/"
         ++ database
 
+-- Is the suppliers table empty?
+suppliersTableIsEmpty :: Connection -> IO Bool
+suppliersTableIsEmpty conn = do
+  [Only nSuppliers] <-
+    query_
+      conn
+      "SELECT COUNT(*) FROM supplier"
+  return $ nSuppliers > (0 :: Int)
+
 -- Insert a random supplier and return the new id.
 writeNewSupplier :: Connection -> IO Int
 writeNewSupplier conn = do
@@ -135,6 +145,15 @@ writeSupplierProducts conn supplierID productIds = do
       supplierProducts
   where
     generateRandomPrice = randomRIO (100, 1000000)
+
+-- Create a random new supplier, and assign it some products.
+writeRandonNewSupplier :: Connection -> IO Int
+writeRandonNewSupplier conn =
+  do
+    supplierID <- writeNewSupplier conn
+    productIds <- readRandomProducts conn
+    writeSupplierProducts conn supplierID productIds
+    return supplierID
 
 -- Log the new supplier.
 logSupplier :: Int -> IO ()

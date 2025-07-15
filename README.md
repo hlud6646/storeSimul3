@@ -75,6 +75,9 @@ needs and you can simply run `java -jar my-project.jar`.
 The `mix` build tool for `elixir` takes this one step further, by including the `mix release`
 command. This does the same thing, but *includes the BEAM VM*.
 
+## Docker Compose
+- Healthchecks are cool (define in the dockerfiles or via a command in compose)
+
 ## Haskell
 Trying for the 10th time to make a Haskell project work properly with Docker. It's hard.
 Not least because everything takes a long time to install and compile, and if you change

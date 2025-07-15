@@ -27,8 +27,13 @@ defmodule Orders.NewOrder do
 
   @impl true
   def handle_info(:create_order, state) do
-    create_order()
-    schedule_new_order()
+    case create_order() do
+      :ok ->
+        schedule_new_order()
+      :no_data ->
+        # If no customers or products exist, try again sooner
+        Process.send_after(self(), :create_order, 30000) # 30 seconds
+    end
     {:noreply, state}
   end
 
@@ -39,16 +44,29 @@ defmodule Orders.NewOrder do
   end
 
   defp create_order do
-    customer_id = get_random_customer_id()
-    address = "#{street_address()}, #{city()}, #{zip_code()}, #{state()}"
+    case get_random_customer_id() do
+      nil ->
+        IO.puts("No customers found, skipping order creation")
+        :no_data
+      customer_id ->
+        products = get_random_products(1 + :rand.uniform(10))
 
-    {:ok, purchase_order} =
-      Orders.Repo.insert(%Orders.PurchaseOrder{customer: customer_id, address: address})
+        case products do
+          [] ->
+            IO.puts("No products found, skipping order creation")
+            :no_data
+          _ ->
+            address = "#{street_address()}, #{city()}, #{zip_code()}, #{state()}"
 
-    products = get_random_products(1 + :rand.uniform(10))
+            {:ok, purchase_order} =
+              Orders.Repo.insert(%Orders.PurchaseOrder{customer: customer_id, address: address})
 
-    make_order_products(products, purchase_order)
-    |> Enum.each(&Orders.Repo.insert/1)
+            make_order_products(products, purchase_order)
+            |> Enum.each(&Orders.Repo.insert/1)
+
+            :ok
+        end
+    end
   end
 
   defp get_random_customer_id do
@@ -56,7 +74,10 @@ defmodule Orders.NewOrder do
     |> order_by(fragment("RANDOM()"))
     |> limit(1)
     |> Orders.Repo.one()
-    |> Map.get(:id)
+    |> case do
+      nil -> nil
+      customer -> Map.get(customer, :id)
+    end
   end
 
   defp get_random_products(n) do

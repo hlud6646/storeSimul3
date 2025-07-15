@@ -23,4 +23,9 @@ FROM alpine:${ALPINE_VERSION} AS release
 RUN apk add --no-cache bash openssl ncurses-libs libstdc++ libgcc
 WORKDIR /app
 COPY --from=builder /app/_build/prod/rel/orders_generator ./
+
+# Simple health check - just verify Elixir process is running
+HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 \
+    CMD pgrep -f "beam.smp.*orders_generator" || exit 1
+
 CMD ["bin/orders_generator", "start"]

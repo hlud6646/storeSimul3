@@ -8,14 +8,16 @@ COPY project ./project
 # changed is the source code (i.e. not the dependencies), the builds will be a lot
 # faster.
 RUN sbt exit
-COPY . .
+COPY src ./src
 RUN sbt assembly
-
-
-
 
 # Runner. Only need the java runtime now. 
 FROM alpine/java:21-jre
 WORKDIR /app
 COPY --from=builder /app/target/scala-3.7.1/products-assembly-0.1.0-SNAPSHOT.jar app.jar
+
+# Simple health check - just verify Java process is running
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD pgrep -f "java.*app.jar" || exit 1
+
 CMD ["java", "-jar", "app.jar"]

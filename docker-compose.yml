@@ -1,13 +1,33 @@
+# This docker-compose file is heavily commented for possible reference in other projects.
+
 # TODO: Limit resources
 # TODO: Use secrets
 
 services:
 
+  # This service is not part of the project, but it's a useful diagnostic tool
+  # during development.
+  server: 
+    build:
+      # A relative path from this file to the directory containting this service.
+      context: ./hello-world-server
+      dockerfile: Dockerfile
+    ports:
+      # This maps a port on the host (left) to a port in the container (right).
+      - "8000:8000"
+    # environment:
+    restart: always
+
+
   # Not that this is how to run a database in production, but it's a very clean setup for 
   # small experiments.
   database:
+    # You can specify the name of an image on dockerhub or wherever.
     image: "postgres:14.18-bookworm"
+    # What happens if the container crashes?
     restart: always
+    # How much shared memory is this instance allowed to access?
+    # TODO: Explain?
     shm_size: 128mb
     environment:
       POSTGRES_DB: storedb
@@ -19,30 +39,20 @@ services:
     # when the container is created.
     volumes:
       - ./database/postgres-init:/docker-entrypoint-initdb.d
+    # You can specify a healthcheck directly. 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d storedb"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # Not part of the final product, but a good health check during development.
-  server: 
-    build:
-      context: ./hello-world-server
-      dockerfile: Dockerfile
-    depends_on:
-      database:
-        condition: service_healthy
-    ports:
-      - "8000:8000"
-    # environment:
-    restart: always
-
   # Scala project that adds products
   products:
+    # Rather than specify an image name, point to a dockerfile to build from.
     build:
       context: ./products
       dockerfile: Dockerfile
+    # This server will not start until the 'database' service is found to be healthy.
     depends_on: 
       database:
         condition: service_healthy
@@ -52,29 +62,15 @@ services:
       POSTGRES_PASSWORD: bigsecret
     restart: always
 
-  # suppliers:
-  #   build:
-  #     context: ./suppliers
-  #     dockerfile: Dockerfile
-  #   depends_on:
-  #     database:
-  #       condition: service_healthy
-  #   environment:
-  #     POSTGRES_USER: postgres
-  #     POSTGRES_PASSWORD: bigsecret
-  #     POSTGRES_HOST: database
-  #     POSTGRES_PORT: 5432
-  #     POSTGRES_DB: storedb
-  #   restart: always
-
-
-  # Elixir program that creates orders
-  orders: 
+  # Haskell service to create suppliers. Need products to be present to create suppliers.
+  suppliers:
     build:
-      context: ./orders
+      context: ./suppliers
       dockerfile: Dockerfile
     depends_on:
       database:
+        condition: service_healthy
+      products:
         condition: service_healthy
     environment:
       POSTGRES_USER: postgres
@@ -85,10 +81,32 @@ services:
     restart: always
 
 
-  # Python program that creates customers
+  # Python program that creates customers. Since the customers get a welcome gift, 
+  # we need to make sure there are products and suppliers in the database.
   customers:
     build:
       context: ./customers
+      dockerfile: Dockerfile
+    depends_on:
+      database:
+        condition: service_healthy
+      products:
+        condition: service_healthy
+      suppliers:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: bigsecret
+      POSTGRES_HOST: database
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: storedb
+    restart: always
+
+
+  # Elixir program that creates orders
+  orders: 
+    build:
+      context: ./orders
       dockerfile: Dockerfile
     depends_on:
       database:

@@ -22,8 +22,20 @@ RUN cabal build
 # The executable will be in dist-newstyle/build/x86_64-linux/ghc-9.10.1/suppliers-0.1.0.0/x/suppliers/build/suppliers/suppliers
 
 # Runner
-# FROM debian:slim-bullseye
-# WORKDIR /app
-# COPY --from=builder /app/dist-newstyle/build/x86_64-linux/ghc-9.10.1/suppliers-0.1.0.0/x/suppliers/build/suppliers/suppliers /app/bin/suppliers
+FROM debian:bullseye-slim
+WORKDIR /app
+RUN apt-get update && apt-get install -y libpq5 ca-certificates procps && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /app/dist-newstyle/build/x86_64-linux/ghc-9.10.1/suppliers-0.1.0.0/x/suppliers/build/suppliers/suppliers /app/bin/suppliers
+
+# Copy fakedata locale files from builder
+COPY --from=builder /root/.local/state/cabal /root/.local/state/cabal
+
+RUN chmod +x /app/bin/suppliers 
+
+# Simple health check - just verify Haskell process is running
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD pgrep -f "suppliers" || exit 1
+
+ENTRYPOINT ["/app/bin/suppliers"]
 
 
