@@ -1,0 +1,188 @@
+# This docker-compose file is heavily commented for possible reference in other projects.
+
+# TODO: Limit resources
+# TODO: Use secrets
+
+services:
+
+  # This service is not part of the project, but it's a useful diagnostic tool
+  # during development.
+  # server: 
+  #   build:
+  #     # A relative path from this file to the directory containting this service.
+  #     context: ./hello-world-server
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     # This maps a port on the host (left) to a port in the container (right).
+  #     - "8000:8000"
+  #   # environment:
+  #   restart: always
+
+
+  # Not that this is how to run a database in production, but it's a very clean setup for 
+  # small experiments.
+  database:
+    # You can specify the name of an image on dockerhub or wherever.
+    image: "postgres:14.18-bookworm"
+    # What happens if the container crashes?
+    restart: always
+    # How much shared memory is this instance allowed to access?
+    # TODO: Explain?
+    shm_size: 128mb
+    environment:
+      POSTGRES_DB: storedb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: bigsecret
+    ports:
+      - "5432:5432"
+    # This will cause the intialisation scripts in the database/postgres-init directory to be run 
+    # when the container is created.
+    volumes:
+      - ./database/postgres-init:/docker-entrypoint-initdb.d
+    # You can specify a healthcheck directly. 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d storedb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Scala project that adds products
+  products:
+    # In production, we use the image we have pushed to ECR.
+    image: public.ecr.aws/r7q9b4d1/store/products
+    # Rather than specify an image name, point to a dockerfile to build from.
+    # build:
+    #   context: ./products
+    #   dockerfile: Dockerfile
+    # This server will not start until the 'database' service is found to be healthy.
+    depends_on: 
+      database:
+        condition: service_healthy
+    environment: 
+      JDBC_URL: jdbc:postgresql://database:5432/storedb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: bigsecret
+    restart: always
+
+  # Haskell service to create suppliers. Need products to be present to create suppliers.
+  suppliers:
+    image: public.ecr.aws/r7q9b4d1/store/suppliers
+    # build:
+    #   context: ./suppliers
+    #   dockerfile: Dockerfile
+    depends_on:
+      database:
+        condition: service_healthy
+      products:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: bigsecret
+      POSTGRES_HOST: database
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: storedb
+    restart: always
+
+
+  # Python program that creates customers. Since the customers get a welcome gift, 
+  # we need to make sure there are products and suppliers in the database.
+  customers:
+    image: public.ecr.aws/r7q9b4d1/store/customers
+    # build:
+    #   context: ./customers
+    #   dockerfile: Dockerfile
+    depends_on:
+      database:
+        condition: service_healthy
+      products:
+        condition: service_healthy
+      suppliers:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: bigsecret
+      POSTGRES_HOST: database
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: storedb
+    restart: always
+
+
+  # Elixir program that creates orders
+  orders: 
+    image: public.ecr.aws/r7q9b4d1/store/orders
+    # build:
+    #   context: ./orders
+    #   dockerfile: Dockerfile
+    depends_on:
+      database:
+        condition: service_healthy
+      customers:
+        condition: service_healthy
+      suppliers:
+        condition: service_healthy
+      products: 
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: bigsecret
+      POSTGRES_HOST: database
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: storedb
+      ERL_CRASH_DUMP_SECONDS: 30
+      ERL_CRASH_DUMP: /app/erl_crash.dump
+      ELIXIR_ERL_OPTIONS: "+sbwt none +sbwtdcpu none +sbwtdio none"
+    restart: always
+    volumes:
+      - ./crash-dumps:/app/crash-dumps
+    command: >
+      sh -c "
+        echo 'Waiting for all services to be fully ready...' &&
+        sleep 15 &&
+        /app/start_with_logging.sh
+      "
+
+  # Python FastAPI service that provides a read-only dashboard API
+  dashboard-api:
+    image: public.ecr.aws/r7q9b4d1/store/dashboard-api
+    # build:
+    #   context: ./dashboard-api
+    #   dockerfile: Dockerfile
+    depends_on:
+      database:
+        condition: service_healthy
+      products:
+        condition: service_healthy
+      suppliers:
+        condition: service_healthy
+      customers:
+        condition: service_healthy
+      orders:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: bigsecret
+      POSTGRES_HOST: database
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: storedb
+      PORT: 8005
+    ports:
+      - "8005:8005"
+    restart: always
+
+  # Frontend dashboard service that provides.
+  dashboard:
+    image: public.ecr.aws/r7q9b4d1/store/dashboard
+    # build:
+    #   context: ./dashboard
+    #   dockerfile: Dockerfile
+    depends_on:
+      dashboard-api:
+        condition: service_healthy
+    environment:
+      REACT_APP_API_URL: http://dashboard-api:8005
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    restart: always
+
+

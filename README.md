@@ -79,17 +79,11 @@ command. This does the same thing, but *includes the BEAM VM*.
 - Healthchecks are cool (define in the dockerfiles or via a command in compose)
 
 ## Haskell
-Trying for the 10th time to make a Haskell project work properly with Docker. It's hard.
-Not least because everything takes a long time to install and compile, and if you change
-versions of something then you have to start again. 
-This time around I'm going Docker first, and will match the local versions of cabal and ghc to 
-what exists on the target image.
+Project configuration is a bit tricky. When you start a new project a LOT of binaries get compiled.
+So you should make sure that the compiler version you are targetting on your docker image matches the
+one you are using for local development (or just do all your builds inside the container from day 1.)
+This gets tricky since you also need to consider compatible compiler versions for all your dependencies...
 
-I want to use haskell:slim-bookworm, since that builds on debian:bookworm-slim which is used elsewhere.
-BUT
-postgresql-simple has only been tested on ghc 9.10.1 and earlier, and slim slim-bookworm runs a newer compiler.
-So we'll have to use an older debian for this.
-haskell:slim-bullseye runs ghc 9.10.1 so this is the target.
 
-Use ghcup to set the local version of ghc to 9.10.1 and the local version of 
-cabal to 3.12.1.0
+## Security
+**None** of this is secure. There are passwords in the repo. Go find them!
