@@ -38,7 +38,7 @@ services:
     # This will cause the intialisation scripts in the database/postgres-init directory to be run 
     # when the container is created.
     volumes:
-      - ./database/postgres-init:/docker-entrypoint-initdb.d
+      - ../database/postgres-init:/docker-entrypoint-initdb.d
     # You can specify a healthcheck directly. 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d storedb"]
