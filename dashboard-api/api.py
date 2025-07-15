@@ -55,7 +55,7 @@ def read_recent_orders():
     return [{ 
         "id": o[0], 
         "customer": o[1], 
-        "date": o[2].astimezone(sydney_tz).strftime('%Y-%m-%d %H:%M:%S %Z'), 
+        "date": o[2].astimezone(sydney_tz).isoformat(), 
         "address": o[3] 
     } for o in orders]
 
@@ -96,7 +96,7 @@ def read_new_customers():
         "id": c[0], 
         "name": c[1], 
         "email": c[2], 
-        "joined": c[3].astimezone(sydney_tz).strftime('%Y-%m-%d %H:%M:%S %Z') 
+        "joined": c[3].astimezone(sydney_tz).isoformat() 
     } for c in customers]
 
 
@@ -124,11 +124,11 @@ def read_orders_over_time():
     cur.close()
     conn.close()
     
-    # Convert UTC timestamps to Sydney timezone
+    # Convert UTC timestamps to Sydney timezone and format as ISO string
     sydney_tz = pytz.timezone('Australia/Sydney')
     
     return [{ 
-        "date": row[0].replace(tzinfo=pytz.UTC).astimezone(sydney_tz).strftime('%Y-%m-%d %H:%M:%S %Z'), 
+        "date": row[0].replace(tzinfo=pytz.UTC).astimezone(sydney_tz).isoformat(), 
         "orders": row[1] 
     } for row in orders_data]
 

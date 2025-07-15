@@ -7,16 +7,16 @@ services:
 
   # This service is not part of the project, but it's a useful diagnostic tool
   # during development.
-  server: 
-    build:
-      # A relative path from this file to the directory containting this service.
-      context: ./hello-world-server
-      dockerfile: Dockerfile
-    ports:
-      # This maps a port on the host (left) to a port in the container (right).
-      - "8000:8000"
-    # environment:
-    restart: always
+  # server: 
+  #   build:
+  #     # A relative path from this file to the directory containting this service.
+  #     context: ./hello-world-server
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     # This maps a port on the host (left) to a port in the container (right).
+  #     - "8000:8000"
+  #   # environment:
+  #   restart: always
 
 
   # Not that this is how to run a database in production, but it's a very clean setup for 

@@ -125,10 +125,11 @@ writeNewSupplier conn = do
       supplier
   return supplierId
 
--- Pull 20 random product ids from the database.
+-- Pull a random number of random product ids from the database.
 readRandomProducts :: Connection -> IO [Int]
 readRandomProducts conn = do
-  ids <- query_ conn "SELECT id FROM product ORDER BY RANDOM() LIMIT 20"
+  n_products <- randomRIO (5 :: Int, 20 :: Int)
+  ids <- query conn "SELECT id FROM product ORDER BY RANDOM() LIMIT ?" (Only n_products)
   return $ map fromOnly ids
 
 -- Given a supplier_id and a list of product_ids, record in the database.
