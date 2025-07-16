@@ -38,7 +38,10 @@ services:
     # This will cause the intialisation scripts in the database/postgres-init directory to be run 
     # when the container is created.
     volumes:
+      # Volume for the initialisation scripts.
       - ../database/postgres-init:/docker-entrypoint-initdb.d
+      # Volume for the database data.
+      - postgres_data:/var/lib/postgresql/data
     # You can specify a healthcheck directly. 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d storedb"]
@@ -179,8 +182,7 @@ services:
       dashboard-api:
         condition: service_healthy
     environment:
-      REACT_APP_API_URL: http://dashboard-api:8005
-      PORT: 3000
+      REACT_APP_API_URL: https://hlud.xyz/store/api/
     ports:
       - "3000:3000"
     restart: always
