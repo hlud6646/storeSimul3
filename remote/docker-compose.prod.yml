@@ -137,12 +137,6 @@ services:
     restart: always
     volumes:
       - ./crash-dumps:/app/crash-dumps
-    command: >
-      sh -c "
-        echo 'Waiting for all services to be fully ready...' &&
-        sleep 15 &&
-        /app/start_with_logging.sh
-      "
 
   # Python FastAPI service that provides a read-only dashboard API
   dashboard-api:

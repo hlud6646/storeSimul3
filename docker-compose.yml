@@ -172,7 +172,6 @@ services:
       dashboard-api:
         condition: service_healthy
     environment:
-      REACT_APP_API_URL: http://dashboard-api:8005
       PORT: 3000
     ports:
       - "3000:3000"

@@ -140,6 +140,11 @@ const entrypoints = [...new Bun.Glob("**.html").scanSync("src")]
   .filter(dir => !dir.includes("node_modules"));
 console.log(`📄 Found ${entrypoints.length} HTML ${entrypoints.length === 1 ? "file" : "files"} to process\n`);
 
+// Add this right before the build() call to debug
+console.log("🔍 Environment variables during build:");
+console.log("Bun.env.REACT_APP_API_URL:", Bun.env.REACT_APP_API_URL);
+console.log("process.env.REACT_APP_API_URL:", process.env.REACT_APP_API_URL);
+
 // Build all the HTML files
 const result = await build({
   entrypoints,
@@ -150,7 +155,7 @@ const result = await build({
   sourcemap: "linked",
   define: {
     "process.env.NODE_ENV": JSON.stringify("production"),
-    "process.env.REACT_APP_API_URL": JSON.stringify("http://localhost:8005")
+    "process.env.REACT_APP_API_URL": JSON.stringify(process.env.REACT_APP_API_URL || "http://localhost:8005")
   },
   ...cliConfig, // Merge in any CLI-provided options
 });
