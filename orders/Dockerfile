@@ -30,41 +30,8 @@ RUN mkdir -p /app/crash-dumps
 
 COPY --from=builder /app/_build/prod/rel/orders_generator ./
 
-# Add a wrapper script with database connection testing
-RUN cat << 'EOF' > /app/start_with_logging.sh
-#!/bin/bash
-echo "Starting Orders application at $(date)"
-echo "Environment: $MIX_ENV"
-
-# Wait for database to be ready using netcat
-echo "Testing database connection..."
-for i in {1..30}; do
-    if nc -z $POSTGRES_HOST $POSTGRES_PORT; then
-        echo "Database connection successful"
-        break
-    else
-        echo "Database not ready, attempt $i/30..."
-        sleep 2
-    fi
-    
-    if [ $i -eq 30 ]; then
-        echo "Database connection failed after 30 attempts, exiting"
-        exit 1
-    fi
-done
-
-# Set crash dump location
-export ERL_CRASH_DUMP="/app/crash-dumps/erl_crash_$(date +%Y%m%d_%H%M%S).dump"
-
-# Start the application
-echo "Starting Orders application..."
-exec bin/orders_generator start
-EOF
-
-RUN chmod +x /app/start_with_logging.sh
-
 # Simple health check - just verify Elixir process is running
 HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 \
-    CMD pgrep -f "beam.smp.*orders_generator" || exit 1
+    CMD pgrep -f "beam.smp.*orders_generator" > /dev/null || exit 1
 
-CMD ["/app/start_with_logging.sh"]
+CMD ["/app/bin/orders_generator", "start"]
